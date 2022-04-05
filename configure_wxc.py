@@ -25,11 +25,11 @@ def read_patterns() -> dict[str, Catalog]:
     with open('normalized.csv', mode='r') as f:
         reader = DictReader(f, fieldnames=['catalog', 'pattern'])
         records = [r for r in reader]
-    paterns_by_catalog = defaultdict(list)
+    patterns_by_catalog = defaultdict(list)
     for r in records:
-        paterns_by_catalog[r['catalog']].append(r['pattern'])
+        patterns_by_catalog[r['catalog']].append(r['pattern'])
     return {name: Catalog(name=name, patterns=patterns)
-            for name, patterns in paterns_by_catalog.items()}
+            for name, patterns in patterns_by_catalog.items()}
 
 
 def configure_wxc():
@@ -65,13 +65,13 @@ def configure_wxc():
             log.info(f'{dialplan.name}: created')
         else:
             # check if the route choice has changed
-            wxx_dialplan = dialplans[dialplan.name]
-            wxx_dialplan: DialPlan
-            if dialplan.route_type.value != wxx_dialplan.route_identity_type or \
-                    route_choice.id != wxx_dialplan.route_identity_id:
+            wxc_dialplan = dialplans[dialplan.name]
+            wxc_dialplan: DialPlan
+            if dialplan.route_type.value != wxc_dialplan.route_identity_type or \
+                    route_choice.id != wxc_dialplan.route_identity_id:
                 if not delete_only:
                     # route choice needs to be updated
-                    api.dial_plan_update_routing(dialplan_id=wxx_dialplan.dialplan_id,
+                    api.dial_plan_update_routing(dialplan_id=wxc_dialplan.dialplan_id,
                                                  route_identity=route_choice.id,
                                                  route_identity_type=dialplan.route_type.value)
                     log.info(f'{dialplan.name}: Updated route choice: '
