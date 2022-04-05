@@ -1,0 +1,3 @@
+TOKEN_INTEGRATION_CLIENT_ID=<integration ID>>
+TOKEN_INTEGRATION_CLIENT_SECRET=<integration secret>>
+TOKEN_INTEGRATION_CLIENT_SCOPES="<integration scopes>"

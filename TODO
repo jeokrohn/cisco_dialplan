@@ -1,0 +1,18 @@
+* read patterns from remoteroutingpattern table on UCM
+    * ZEEP
+    * thin AXl
+    * SQL throttling: https://developer.cisco.com/docs/axl/#!axl-developer-guide/data-throttling-and-performance
+    * minimal columns lis to reduce data volume
+    * reuse existing UCM helper
+* structure
+    * script 1: read patterns from UCM and cache patterns locally
+    * script 2: deploy patterns to WxC from local cache
+* config file
+    * YAML
+    * pydantic data structure for config
+    * content
+        * UCM credentials
+        * tokens, if missing obtained using get_token() flow
+        * mapping from route strings to dial plan names
+        * ...
+

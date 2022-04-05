@@ -1,0 +1,18 @@
+tokens: <insert access token here or leave empty if you want to use an OAuth flow to create tokens>
+dialplans:
+- catalogs:
+  - '-1106673175'
+  - '-1223097577'
+  name: dial plan 1
+  route_choice: Frisco
+  route_type: TRUNK
+- catalogs:
+  - '-1709291859'
+  name: dial plan 2
+  route_choice: Routegroup 2
+  route_type: ROUTE_GROUP
+- catalogs:
+  - '-1733255421'
+  name: dial plan 3
+  route_choice: Frisco
+  route_type: TRUNK

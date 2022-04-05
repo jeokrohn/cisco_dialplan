@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Build the project's product(s).
+#
+# Copyright (c) 2022 Johannes Krohn <jkrohn@cisco.com>
+# License: MIT
+
+
+set -e
+cd "$(dirname "$0")/.."
+
+
+# Default build
+all=true
+
+
+# Process Script Arguments
+for i in ${@}; do
+    case ${i} in
+        reqs)
+        all=
+        reqs=true
+        ;;
+
+        *)
+        echo "Unknown argument: $i"
+        exit 1
+        ;;
+    esac
+done
+
+if [ ${all} ] || [ ${reqs} ]; then
+    echo "==> Creating requirements.txt"
+    poetry export --without-hashes -o requirements.txt
+fi
