@@ -125,7 +125,6 @@ class CPAPIHelper:
 
         self.base = f'{cpapi_url}/customers/{org_id}'
         self.session = session
-        self.ci_org_id = org_id
 
     def dialplans_list(self, name: str = None) -> Generator[DialPlan, None, None]:
         """
@@ -145,8 +144,8 @@ class CPAPIHelper:
     def dialplan_create(self, *, name: str, route_identity: str, route_identity_type: str) -> str:
         """
 
-        :param name:
-        :param route_identity:
+        :param name: dial plan name
+        :param route_identity: id of route identity (trunk or route group)
         :param route_identity_type: TRUNK or ROUTE_GROUP
         :return dialplan id
         """
@@ -208,13 +207,14 @@ class CPAPIHelper:
         if not data:
             return []
         result = [DialPatternStatus.parse_obj(o)
-                  for o in data.get('dialPatternStatus', [])]
+                  for o in data['dialPatternStatus']]
         return result
 
     def dialplan_patterns_delete(self, dialplan_id: str,
                                  patterns: List[str]) -> List[DialPatternStatus]:
         """
         Remove dial plan patterns from dial plan
+
         :param dialplan_id:
         :param patterns:
         :return:

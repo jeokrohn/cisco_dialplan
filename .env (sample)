@@ -1,3 +1,6 @@
 TOKEN_INTEGRATION_CLIENT_ID=<integration ID>>
 TOKEN_INTEGRATION_CLIENT_SECRET=<integration secret>>
 TOKEN_INTEGRATION_CLIENT_SCOPES="<integration scopes>"
+AXL_HOST=<UCM to read patterns from>
+AXL_USER=<AXL user>
+AXL_PASSWORD=<AXL password>
