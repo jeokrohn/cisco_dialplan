@@ -7,3 +7,4 @@ Tools to configure Webex Calling Dial plans
 - .env (sample): sample .env file to define integration parameters to obtain tokens via OAUth flow
 - configure_wxc.py: configure dial plans in WxC based on normalized.csv and config in config.yml
 - delete_dialplans.py: delete dial plans which are referenced in config.yml
+- read_ucm.py: read learned patterns from UCM via thin AXL and write to CSV for further processing
