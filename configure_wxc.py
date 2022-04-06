@@ -2,15 +2,16 @@
 """
 Configure dial plans according to config file
 """
-from config import *
-from csv import DictReader
-from collections import defaultdict
-from cpapi_helper import *
-
-from concurrent.futures import ThreadPoolExecutor
-
-from dataclasses import dataclass
 import logging
+import os
+import sys
+from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
+from csv import DictReader
+from dataclasses import dataclass
+
+from config import *
+from cpapi_helper import *
 
 log = logging.getLogger(__name__)
 
@@ -21,8 +22,9 @@ class Catalog:
     patterns: list[str]
 
 
-def read_patterns() -> dict[str, Catalog]:
-    with open('normalized.csv', mode='r') as f:
+def read_patterns(*, csv_file: str) -> dict[str, Catalog]:
+    log.info(f'reading patterns from {csv_file}')
+    with open(csv_file, mode='r') as f:
         reader = DictReader(f, fieldnames=['catalog', 'pattern'])
         records = [r for r in reader]
     patterns_by_catalog = defaultdict(list)
@@ -32,12 +34,12 @@ def read_patterns() -> dict[str, Catalog]:
             for name, patterns in patterns_by_catalog.items()}
 
 
-def configure_wxc():
+def configure_wxc(*, csv_file:str):
     """
     Configure dial plans and patterns based on YML config
     """
     config = Config.from_yml('config.yml')
-    catalogs = read_patterns()
+    catalogs = read_patterns(csv_file=csv_file)
     api = CPAPIHelper(access_token=config.tokens.access_token)
     trunks = {trunk.name: trunk for trunk in api.trunks_list()}
     route_groups = {rg.name: rg for rg in api.routegroups_list()}
@@ -106,4 +108,7 @@ def configure_wxc():
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    configure_wxc()
+    if len(sys.argv) < 2:
+        print(f'usage: {os.path.basename(sys.argv[0])} csvfile')
+        exit(1)
+    configure_wxc(csv_file=sys.argv[1])

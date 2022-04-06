@@ -11,8 +11,6 @@ from pydantic import BaseModel, Field, parse_obj_as
 
 from ucmaxl import AXLHelper
 
-CSV_OUTPUT = 'read_ucm.csv'
-
 
 class LearnedPattern(BaseModel):
     remote_catalog_key_id: str = Field(alias='remotecatalogkey_id')
@@ -83,8 +81,9 @@ def read_from_ucm():
     learned = learned_patterns(axl)
 
     # write patterns to file with route string in remotecatalogkey_id column
-    print(f'Writing patterns to "{CSV_OUTPUT}"')
-    with open(CSV_OUTPUT, mode='w', newline='') as output:
+    csv_path = f'{os.path.splitext(os.path.basename(__file__))[0]}.csv'
+    print(f'Writing patterns to "{csv_path}"')
+    with open(csv_path, mode='w', newline='') as output:
         writer = csv.writer(output)
         writer.writerow(('remotecatalogkey_id', 'pattern'))
         for pattern in learned:

@@ -4,6 +4,7 @@ Read a bunch of patterns from a CSV file (GDPR export) and normalize them to a f
 WxC dial plans
 """
 import logging
+import os.path
 import re
 import sys
 from csv import DictReader
@@ -40,8 +41,8 @@ def normalize(*, patterns: Iterable[str]) -> Generator[str, None, None]:
             yield pattern
 
 
-def read_and_normalize():
-    with open(CSV_PATH, mode='r', encoding='utf-8-sig') as csv_file:
+def read_and_normalize(csv_name: str):
+    with open(csv_name, mode='r', encoding='utf-8-sig') as csv_file:
         reader = DictReader(csv_file, dialect='excel')
         records = list(reader)
     # group patterns by remote catalog
@@ -110,4 +111,7 @@ def read_and_normalize():
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    read_and_normalize()
+    if len(sys.argv) < 2:
+        print(f'usage: {os.path.basename(sys.argv[0])} csvfile')
+        exit(1)
+    read_and_normalize(csv_name=sys.argv[1])
