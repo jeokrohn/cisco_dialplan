@@ -1,31 +1,23 @@
+"""
+Configuration class for dial plan provisioning
+"""
 import json
-from enum import Enum
-from typing import Optional, Union
-from wxc_sdk.tokens import Tokens
-from wxc_sdk.integration import Integration
-import concurrent.futures
-import os
-
-import http.server
-import urllib.parse
-import threading
-import webbrowser
-import uuid
-import socketserver
-import requests
-
 import logging
+import os
+from typing import Optional, Union
 
 import yaml
-from pydantic import BaseModel
 from dotenv import load_dotenv
+from pydantic import BaseModel
+from wxc_sdk.common import RouteType
+from wxc_sdk.integration import Integration
+from wxc_sdk.tokens import Tokens
 
-__all__ = ['RouteTypeConfig', 'DialplanConfig', 'Config']
+__all__ = ['DialplanConfig', 'Config']
 
 load_dotenv()
 
 log = logging.getLogger(__name__)
-
 
 
 def build_integration() -> Integration:
@@ -43,116 +35,44 @@ def build_integration() -> Integration:
                        redirect_url=redirect_url)
 
 
-def get_tokens_from_oauth_flow(integration: Integration) -> Optional[Tokens]:
-    """
-    Initiate an OAuth flow to obtain new tokens.
-
-    start a local webserver on port 6001 o serve the last step in the OAuth flow
-
-    :param integration: Integration to use for the flow
-    :type: :class:`wxc_sdk.integration.Integration`
-    :return: set of new tokens if successful, else None
-    :rtype: :class:`wxc_sdk.tokens.Tokens`
-    """
-
-    def serve_redirect():
-        """
-        Temporarily start a web server to serve the redirect URI at http://localhost:6001/redirect'
-        :return: parses query of the GET on the redirect URI
-        """
-
-        # mutable to hold the query result
-        oauth_response = dict()
-
-        class RedirectRequestHandler(http.server.BaseHTTPRequestHandler):
-            # handle the GET request on the redirect URI
-
-            # noinspection PyPep8Naming
-            def do_GET(self):
-                # serve exactly one GET on the redirect URI and then we are done
-
-                parsed = urllib.parse.urlparse(self.path)
-                if parsed.path == '/redirect':
-                    log.debug('serve_redirect: got GET on /redirect')
-                    query = urllib.parse.parse_qs(parsed.query)
-                    oauth_response['query'] = query
-                    # we are done
-                    self.shutdown(self.server)
-                self.send_response(200)
-                self.flush_headers()
-
-            @staticmethod
-            def shutdown(server: socketserver.BaseServer):
-                log.debug('serve_redirect: shutdown of local web server requested')
-                threading.Thread(target=server.shutdown, daemon=True).start()
-
-        httpd = http.server.HTTPServer(server_address=('', 6001),
-                                       RequestHandlerClass=RedirectRequestHandler)
-        log.debug('serve_redirect: starting local web server for redirect URI')
-        httpd.serve_forever()
-        httpd.server_close()
-        log.debug(f'serve_redirect: server terminated, result {oauth_response["query"]}')
-        return oauth_response['query']
-
-    state = str(uuid.uuid4())
-    auth_url = integration.auth_url(state=state)
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        # start web server
-        fut = executor.submit(serve_redirect)
-
-        # open authentication URL in local webbrowser
-        webbrowser.open(auth_url)
-        # wait for GET on redirect URI and get the result (parsed query of redirect URI)
-        try:
-            result = fut.result(timeout=120)
-        except concurrent.futures.TimeoutError:
-            try:
-                # post a dummy response to the redirect URI to stop the server
-                with requests.Session() as session:
-                    session.get(integration.redirect_url, params={'code': 'foo'})
-            except Exception:
-                pass
-            log.warning('Authorization did not finish in time (60 seconds)')
-            return
-
-    code = result['code'][0]
-    response_state = result['state'][0]
-    assert response_state == state
-
-    # get access tokens
-    new_tokens = integration.tokens_from_code(code=code)
-    if new_tokens is None:
-        log.error('Failed to obtain tokens')
-        return None
-    return new_tokens
-
-
-class RouteTypeConfig(str, Enum):
-    trunk = 'TRUNK'
-    route_group = 'ROUTE_GROUP'
-
-
 class DialplanConfig(BaseModel):
+    """
+    Configuration of a single dial plan
+    """
     name: str
-    route_type: RouteTypeConfig
+    #: trunk or route group
+    route_type: RouteType
+    #: name of trunk or route group
     route_choice: str
+    #: list of names of GDPR catalogs to be routed via this dial plan
     catalogs: list[str]
 
+
 class Config(BaseModel):
-    # can be a string
+    """
+    Configuration for dial plan provisioning script
+    """
+    #: tokens to be used. Either a full Tokens intance ot a simple string with an access token
+    #: if not existing then when instantiating the calls, new access and refresh tokens are obtained using the Wx
+    #: integration defined in the .env file by initiating an OAuth flow redirecting to a local webserver
     tokens: Optional[Union[str, Tokens]]
+    #: list of dial plan configurations
     dialplans: Optional[list[DialplanConfig]]
+    #: cache for YML config file path the config is mapped to
     yml_path: Optional[str]
 
     def json(self) -> str:
+        """
+        JSON representation of the config; without the yml_path
+        """
         return super().json(exclude={'yml_path'})
 
     @staticmethod
     def from_yml(path: str) -> 'Config':
         """
         Read config from YML file
-        :param path:
-        :return:
+        :param path: path of the YML file
+        :return: instance of Config class
         """
         with open(path, mode='r') as f:
             config_dict = yaml.safe_load(f)
@@ -160,6 +80,7 @@ class Config(BaseModel):
         config.yml_path = path
         if isinstance(config.tokens, str):
             config.tokens = Tokens(access_token=config.tokens)
+        # make sure we have a valid access token
         config.assert_access_token()
         return config
 
@@ -189,7 +110,6 @@ class Config(BaseModel):
                 self.write()
         if not self.tokens:
             # get new tokens via integration if needed
-            self.tokens = get_tokens_from_oauth_flow(integration=integration)
+            self.tokens = integration.get_tokens_from_oauth_flow()
             if self.tokens:
-                self.tokens.set_expiration()
                 self.write()

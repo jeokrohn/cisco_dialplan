@@ -30,5 +30,5 @@ done
 
 if [ ${all} ] || [ ${reqs} ]; then
     echo "==> Creating requirements.txt"
-    poetry export --without-hashes -o requirements.txt
+    pip freeze > requirements.txt
 fi

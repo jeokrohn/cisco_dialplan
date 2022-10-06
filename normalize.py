@@ -7,10 +7,10 @@ import logging
 import os.path
 import re
 import sys
+from collections import defaultdict
 from csv import DictReader
-from itertools import groupby, chain
-from typing import Iterable, Generator, Tuple
-from collections import Counter, defaultdict
+from itertools import groupby
+from typing import Iterable, Generator
 
 CSV_PATH = 'ILS_Learned_Patterns_ForScript.csv'
 
@@ -19,7 +19,7 @@ def normalize(*, patterns: Iterable[str]) -> Generator[str, None, None]:
     # regex to catch patterns with [..] in it
     catch_re = re.compile(r'(?P<pre>.*)(?P<re_part>\[.+])(?P<post>.*)')
     for pattern in patterns:
-        if '.' in pattern:
+        if any(c in pattern for c in '.*!'):
             print(f'illegal pattern format: {pattern}', file=sys.stderr)
             continue
         if m := catch_re.match(pattern):
@@ -46,7 +46,6 @@ def read_and_normalize(csv_name: str):
         reader = DictReader(csv_file, dialect='excel')
         records = list(reader)
     # group patterns by remote catalog
-    patterns = [r['pattern'] for r in records]
     records.sort(key=lambda r: r['remotecatalogkey_id'])
     grouped = {catalog: set(r['pattern'] for r in riter)
                for catalog, riter in groupby(records, key=lambda r: r['remotecatalogkey_id'])}
@@ -82,6 +81,7 @@ def read_and_normalize(csv_name: str):
             for l in range(i + 1, len(origin_patterns)):
                 less_specific = normalized_from_origin[origin_patterns[l]]
                 less_specific.difference_update(more_specific)
+
         # now remove the original patterns from catalog and insert new ones
         print(f'Conflict resolution: {", ".join(origin_patterns)}', file=sys.stderr)
         for catalog, pattern in duplicates[duplicate]:
