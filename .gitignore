@@ -142,3 +142,4 @@ config.yml
 .idea
 read_ucm.csv
 
+/internal/
