@@ -12,8 +12,6 @@ from csv import DictReader
 from itertools import groupby
 from typing import Iterable, Generator
 
-CSV_PATH = 'ILS_Learned_Patterns_ForScript.csv'
-
 
 def normalize(*, patterns: Iterable[str]) -> Generator[str, None, None]:
     # regex to catch patterns with [..] in it
